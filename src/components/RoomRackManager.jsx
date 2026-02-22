@@ -127,9 +127,9 @@ export default function RoomRackManager() {
     if (loading) return <div className="p-8 text-slate-500">Odalar yükleniyor...</div>;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Odalar Sütunu */}
-            <div className="md:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[70vh]">
+            <div className="md:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col min-h-[75vh]">
                 <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h3 className="font-semibold text-slate-700 flex items-center gap-2">
                         <Home size={18} className="text-indigo-500" />
@@ -189,7 +189,7 @@ export default function RoomRackManager() {
             </div>
 
             {/* Raflar Sütunu */}
-            <div className="md:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[70vh]">
+            <div className="md:col-span-3 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col min-h-[75vh]">
                 <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
                     <Layers size={18} className="text-indigo-500" />
                     <h3 className="font-semibold text-slate-700">
@@ -203,7 +203,7 @@ export default function RoomRackManager() {
                             Sol taraftan bir oda seçiniz.
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {racks[activeRoomId]?.map(rack => (
                                 <div key={rack.id} className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between group">
                                     <div>
