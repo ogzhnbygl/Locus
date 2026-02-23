@@ -34,21 +34,21 @@ export default function Dashboard() {
                     <nav className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-lg">
                         <button
                             onClick={() => setActiveView('rooms')}
-                            className={`px - 4 py - 1.5 text - sm font - medium rounded - md transition - all flex items - center gap - 2 ${activeView === 'rooms'
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activeView === 'rooms'
                                 ? 'bg-white text-indigo-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                                } `}
+                                }`}
                         >
                             <Layers size={16} /> Odalar & Raflar
                         </button>
                         <button
                             onClick={() => setActiveView('navigator')}
-                            className={`px - 4 py - 1.5 text - sm font - medium rounded - md transition - all flex items - center gap - 2 ${activeView === 'navigator'
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activeView === 'navigator'
                                 ? 'bg-white text-indigo-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                                } `}
+                                }`}
                         >
-                            <GridIcon size={16} /> Navigatör
+                            <GridIcon size={16} /> Kafes Haritası
                         </button>
                     </nav>
 
@@ -85,7 +85,7 @@ export default function Dashboard() {
                 )}
                 {activeView === 'navigator' && (
                     <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-slate-800">Navigatör</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">Kafes Haritası</h2>
                         <p className="text-sm text-slate-500 mt-1">Fiziksel kafes ızgarasında gezinerek direkt slotlar üzerinde işlem yapın.</p>
                     </div>
                 )}
