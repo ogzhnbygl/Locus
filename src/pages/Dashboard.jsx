@@ -77,18 +77,7 @@ export default function Dashboard() {
 
             {/* Main Content Area */}
             <main className="flex-1 max-w-[1600px] mx-auto w-full p-6">
-                {activeView === 'rooms' && (
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-slate-800">Tesis Yapısı</h2>
-                        <p className="text-sm text-slate-500 mt-1">Vivaryum odalarınızı ve bu odalardaki kafes raflarını yönetin.</p>
-                    </div>
-                )}
-                {activeView === 'navigator' && (
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-slate-800">Kafes Haritası</h2>
-                        <p className="text-sm text-slate-500 mt-1">Fiziksel kafes ızgarasında gezinerek direkt slotlar üzerinde işlem yapın.</p>
-                    </div>
-                )}
+
 
                 {renderContent()}
             </main>

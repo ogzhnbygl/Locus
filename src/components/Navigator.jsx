@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Box, Grid as GridIcon, MapPin, Layers, ChevronRight, Home, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Box, Grid as GridIcon, MapPin, Layers, ChevronRight, ChevronLeft, Home, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navigator() {
@@ -27,6 +27,14 @@ export default function Navigator() {
 
     const selectedRoom = rooms.find(r => r.id === selectedRoomId);
     const selectedRack = racks.find(r => r.id === selectedRackId);
+
+    const activeRoomIndex = rooms.findIndex(r => r.id === selectedRoomId);
+    const prevRoom = activeRoomIndex > 0 ? rooms[activeRoomIndex - 1] : null;
+    const nextRoom = activeRoomIndex >= 0 && activeRoomIndex < rooms.length - 1 ? rooms[activeRoomIndex + 1] : null;
+
+    const activeRackIndex = racks.findIndex(r => r.id === selectedRackId);
+    const prevRack = activeRackIndex > 0 ? racks[activeRackIndex - 1] : null;
+    const nextRack = activeRackIndex >= 0 && activeRackIndex < racks.length - 1 ? racks[activeRackIndex + 1] : null;
 
     // Fetch initial hierarchy (Rooms)
     useEffect(() => {
@@ -179,10 +187,9 @@ export default function Navigator() {
 
                 {/* 1. ROOM LEVEL VIEW */}
                 {!selectedRoomId && (
-                    <div className="flex-1 overflow-auto p-8 sm:p-10 bg-[#fafcff]">
-                        <div className="mb-8">
+                    <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#fafcff]">
+                        <div className="mb-4 text-center">
                             <h3 className="text-xl sm:text-2xl font-bold text-slate-800">Tesis Odaları</h3>
-                            <p className="text-base text-slate-500 mt-1">Görüntülemek istediğiniz vivaryum odasını seçin.</p>
                         </div>
                         {rooms.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-white">
@@ -210,10 +217,27 @@ export default function Navigator() {
 
                 {/* 2. RACK LEVEL VIEW */}
                 {selectedRoomId && !selectedRackId && (
-                    <div className="flex-1 overflow-auto p-8 sm:p-10 bg-[#fafcff]">
-                        <div className="mb-8 flex items-baseline gap-2">
-                            <h3 className="text-xl sm:text-2xl font-bold text-slate-800">Raflar</h3>
-                            <span className="text-base text-slate-500 font-medium">— {selectedRoom?.name}</span>
+                    <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#fafcff]">
+                        <div className="mb-4 flex items-center justify-center gap-4">
+                            <button
+                                onClick={() => prevRoom && setSelectedRoomId(prevRoom.id)}
+                                disabled={!prevRoom}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 cursor-pointer"
+                                title={prevRoom ? prevRoom.name : ''}
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight min-w-[120px] text-center">
+                                {selectedRoom?.name}
+                            </h3>
+                            <button
+                                onClick={() => nextRoom && setSelectedRoomId(nextRoom.id)}
+                                disabled={!nextRoom}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 cursor-pointer"
+                                title={nextRoom ? nextRoom.name : ''}
+                            >
+                                <ChevronRight size={24} />
+                            </button>
                         </div>
                         {racks.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-12 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-white">
@@ -241,7 +265,28 @@ export default function Navigator() {
 
                 {/* 3. CAGE (GRID) LEVEL VIEW */}
                 {selectedRackId && selectedRack && (
-                    <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#fafcff] flex">
+                    <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#fafcff] flex flex-col">
+                        <div className="mb-4 flex items-center justify-center gap-4">
+                            <button
+                                onClick={() => prevRack && setSelectedRackId(prevRack.id)}
+                                disabled={!prevRack}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 cursor-pointer"
+                                title={prevRack ? prevRack.name : ''}
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight min-w-[120px] text-center">
+                                {selectedRack?.name}
+                            </h3>
+                            <button
+                                onClick={() => nextRack && setSelectedRackId(nextRack.id)}
+                                disabled={!nextRack}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 cursor-pointer"
+                                title={nextRack ? nextRack.name : ''}
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                        </div>
                         <div className="m-auto bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm max-w-full overflow-x-auto">
                             {/* The Grid */}
                             <div
