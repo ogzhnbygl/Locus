@@ -20,7 +20,6 @@ export default function Navigator() {
     const [newCageBarcode, setNewCageBarcode] = useState('');
 
     // Grid states
-    const [activeSide, setActiveSide] = useState('A');
     const [isAddingCage, setIsAddingCage] = useState(false);
     const [newCageRow, setNewCageRow] = useState(1);
     const [newCageCol, setNewCageCol] = useState(1);
@@ -81,7 +80,6 @@ export default function Navigator() {
                     rackId: selectedRackId,
                     name: newCageName,
                     barcode: newCageBarcode,
-                    side: activeSide,
                     row: newCageRow,
                     column: newCageCol
                 })
@@ -117,6 +115,10 @@ export default function Navigator() {
         } else if (level === 'room') {
             setSelectedRackId('');
         }
+    };
+
+    const getRowLetter = (rowNumber) => {
+        return String.fromCharCode(64 + rowNumber);
     };
 
     return (
@@ -162,22 +164,6 @@ export default function Navigator() {
                         >
                             <ArrowLeft size={16} /> Geri Dön
                         </button>
-                    )}
-                    {selectedRack && selectedRack.sides === 2 && (
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200/50">
-                            <button
-                                onClick={() => setActiveSide('A')}
-                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-shadow ${activeSide === 'A' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                A Yüzü
-                            </button>
-                            <button
-                                onClick={() => setActiveSide('B')}
-                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-shadow ${activeSide === 'B' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                B Yüzü
-                            </button>
-                        </div>
                     )}
                 </div>
             </div>
@@ -254,7 +240,7 @@ export default function Navigator() {
                                     >
                                         <div className="px-2">
                                             <h4 className={`font-semibold text-sm sm:text-base transition-colors line-clamp-1 ${selectedRackId === rack.id ? 'text-indigo-700' : 'text-slate-800 group-hover:text-indigo-700'}`}>{rack.name}</h4>
-                                            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 uppercase tracking-wider font-semibold">{rack.rows}x{rack.cols} • {rack.sides === 2 ? 'Çift Yüzlü' : 'Tek Yüzlü'}</p>
+                                            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 uppercase tracking-wider font-semibold">{rack.rows}x{rack.cols}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -297,7 +283,7 @@ export default function Navigator() {
                                     const rowNum = rIdx + 1;
                                     return Array.from({ length: selectedRack.cols || 1 }).map((_, cIdx) => {
                                         const colNum = cIdx + 1;
-                                        const cage = cages.find(c => (c.side || 'A') === activeSide && c.row === rowNum && c.column === colNum);
+                                        const cage = cages.find(c => c.row === rowNum && c.column === colNum);
 
                                         if (cage) {
                                             // Filled Slot
@@ -326,13 +312,13 @@ export default function Navigator() {
                                                     onClick={() => {
                                                         setNewCageRow(rowNum);
                                                         setNewCageCol(colNum);
-                                                        setNewCageName(`C-${activeSide}${rowNum}${colNum}`);
+                                                        setNewCageName(`C-${getRowLetter(rowNum)}${colNum}`);
                                                         setIsAddingCage(true);
                                                     }}
                                                     className="flex flex-col items-center justify-center p-2 min-h-[4.5rem] min-w-[5rem] sm:min-h-[5rem] sm:min-w-[6rem] border border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50/50 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all text-slate-400 group"
                                                 >
                                                     <Plus size={18} className="transition-transform mb-1 flex-shrink-0" />
-                                                    <span className="text-[10px] sm:text-xs font-medium group-hover:text-indigo-500">{activeSide}-{rowNum}-{colNum}</span>
+                                                    <span className="text-[10px] sm:text-xs font-medium group-hover:text-indigo-500">{getRowLetter(rowNum)}{colNum}</span>
                                                 </div>
                                             )
                                         }
@@ -348,7 +334,7 @@ export default function Navigator() {
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 min-w-[400px] bg-white p-5 border border-slate-200 shadow-xl rounded-2xl z-50">
                         <form onSubmit={handleAddCage} className="space-y-4">
                             <h4 className="font-semibold text-indigo-800 flex items-center gap-2 border-b border-indigo-100 pb-2">
-                                <Plus size={18} /> Yeni Kafes Ekle (Slot: {activeSide}-{newCageRow}-{newCageCol})
+                                <Plus size={18} /> Yeni Kafes Ekle (Slot: {getRowLetter(newCageRow)}{newCageCol})
                             </h4>
                             <div className="space-y-3">
                                 <div>

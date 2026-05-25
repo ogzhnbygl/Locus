@@ -17,7 +17,8 @@ export default async function handler(req, res) {
                 const cages = await collection.find(query).sort({ createdAt: -1 }).toArray();
                 const formatted = cages.map(cage => ({
                     ...cage,
-                    id: cage._id.toString()
+                    id: cage._id.toString(),
+                    rackId: cage.rackId.toString()
                 }));
                 res.status(200).json(formatted);
             } catch (e) {
@@ -27,7 +28,7 @@ export default async function handler(req, res) {
 
         case 'POST':
             try {
-                const { rackId, name, barcode, status, side, row, column } = req.body;
+                const { rackId, name, barcode, status, row, column } = req.body;
                 if (!rackId || !name) return res.status(400).json({ error: 'rackId and name are required' });
 
                 const newCage = {
@@ -35,7 +36,6 @@ export default async function handler(req, res) {
                     name,
                     barcode: barcode || '',
                     status: status || 'Active', // 'Active', 'Empty', 'Maintenance' etc.
-                    side: side || 'A', // Default to single sided 'A'
                     row: row ? parseInt(row, 10) : 1,
                     column: column ? parseInt(column, 10) : 1,
                     createdAt: new Date().toISOString(),

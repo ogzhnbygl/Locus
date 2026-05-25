@@ -17,7 +17,8 @@ export default async function handler(req, res) {
                 const racks = await collection.find(query).sort({ createdAt: -1 }).toArray();
                 const formatted = racks.map(rack => ({
                     ...rack,
-                    id: rack._id.toString()
+                    id: rack._id.toString(),
+                    roomId: rack.roomId.toString()
                 }));
                 res.status(200).json(formatted);
             } catch (e) {
@@ -27,7 +28,7 @@ export default async function handler(req, res) {
 
         case 'POST':
             try {
-                const { roomId, name, description, rows, cols, sides } = req.body;
+                const { roomId, name, description, rows, cols } = req.body;
                 if (!roomId || !name) return res.status(400).json({ error: 'roomId and name are required' });
 
                 const newRack = {
@@ -36,13 +37,37 @@ export default async function handler(req, res) {
                     description: description || '',
                     rows: rows ? parseInt(rows, 10) : 1,
                     cols: cols ? parseInt(cols, 10) : 1,
-                    sides: sides ? parseInt(sides, 10) : 1,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
 
                 const result = await collection.insertOne(newRack);
                 res.status(201).json({ ...newRack, id: result.insertedId.toString() });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+            break;
+
+        case 'PUT':
+            try {
+                const { id, name, description, rows, cols } = req.body;
+                if (!id || !name) return res.status(400).json({ error: 'ID and Name are required' });
+
+                const updateData = {
+                    name,
+                    description: description || '',
+                    updatedAt: new Date().toISOString()
+                };
+                if (rows) updateData.rows = parseInt(rows, 10);
+                if (cols) updateData.cols = parseInt(cols, 10);
+
+                const result = await collection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: updateData }
+                );
+
+                if (result.matchedCount === 0) return res.status(404).json({ error: 'Rack not found' });
+                res.status(200).json({ success: true });
             } catch (e) {
                 res.status(500).json({ error: e.message });
             }
@@ -64,7 +89,7 @@ export default async function handler(req, res) {
             break;
 
         default:
-            res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+            res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
             res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

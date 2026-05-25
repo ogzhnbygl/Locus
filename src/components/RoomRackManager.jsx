@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Home, Layers, Settings, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Home, Layers, Settings, ChevronRight, Edit, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function RoomRackManager() {
@@ -14,8 +14,14 @@ export default function RoomRackManager() {
     const [newRackName, setNewRackName] = useState('');
     const [newRackRows, setNewRackRows] = useState(7);
     const [newRackCols, setNewRackCols] = useState(10);
-    const [newRackSides, setNewRackSides] = useState(2);
     const [activeRoomId, setActiveRoomId] = useState(null);
+
+    // Edit states
+    const [editingRoomId, setEditingRoomId] = useState(null);
+    const [editRoomName, setEditRoomName] = useState('');
+
+    const [editingRackId, setEditingRackId] = useState(null);
+    const [editRackData, setEditRackData] = useState({ name: '', rows: 7, cols: 10 });
 
     useEffect(() => {
         fetchRooms();
@@ -87,6 +93,23 @@ export default function RoomRackManager() {
         }
     };
 
+    const handleUpdateRoom = async (id) => {
+        if (!editRoomName) return;
+        try {
+            const res = await fetch('/api/rooms', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, name: editRoomName })
+            });
+            if (res.ok) {
+                setEditingRoomId(null);
+                fetchRooms();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     const handleAddRack = async (e) => {
         e.preventDefault();
         if (!newRackName || !activeRoomId) return;
@@ -98,15 +121,13 @@ export default function RoomRackManager() {
                     roomId: activeRoomId,
                     name: newRackName,
                     rows: newRackRows,
-                    cols: newRackCols,
-                    sides: newRackSides
+                    cols: newRackCols
                 })
             });
             if (res.ok) {
                 setNewRackName('');
                 setNewRackRows(7);
                 setNewRackCols(10);
-                setNewRackSides(2);
                 fetchRacks(activeRoomId);
             }
         } catch (e) {
@@ -119,6 +140,28 @@ export default function RoomRackManager() {
         try {
             const res = await fetch(`/api/racks?id=${id}`, { method: 'DELETE' });
             if (res.ok) fetchRacks(roomId);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleUpdateRack = async (id, roomId) => {
+        if (!editRackData.name) return;
+        try {
+            const res = await fetch('/api/racks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id,
+                    name: editRackData.name,
+                    rows: editRackData.rows,
+                    cols: editRackData.cols
+                })
+            });
+            if (res.ok) {
+                setEditingRackId(null);
+                fetchRacks(roomId);
+            }
         } catch (e) {
             console.error(e);
         }
@@ -141,25 +184,53 @@ export default function RoomRackManager() {
                     {rooms.map(room => (
                         <div
                             key={room.id}
-                            onClick={() => setActiveRoomId(room.id)}
+                            onClick={() => { if (!editingRoomId) setActiveRoomId(room.id); }}
                             className={`group flex flex-col p-3 rounded-lg border cursor-pointer transition-all ${activeRoomId === room.id
                                 ? 'border-indigo-500 bg-indigo-50/50 shadow-sm'
                                 : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
                         >
-                            <div className="flex justify-between items-center">
-                                <span className="font-medium text-slate-800">{room.name}</span>
-                                {isAdmin && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDeleteRoom(room.id); }}
-                                        className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
-                            </div>
+                            {editingRoomId === room.id ? (
+                                <div className="flex items-center gap-2 mb-1" onClick={e => e.stopPropagation()}>
+                                    <input
+                                        type="text"
+                                        value={editRoomName}
+                                        onChange={e => setEditRoomName(e.target.value)}
+                                        className="flex-1 text-sm border-slate-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500"
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleUpdateRoom(room.id);
+                                            if (e.key === 'Escape') setEditingRoomId(null);
+                                        }}
+                                    />
+                                    <button onClick={() => handleUpdateRoom(room.id)} className="text-green-600 hover:text-green-700 p-1"><Check size={16} /></button>
+                                    <button onClick={() => setEditingRoomId(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={16} /></button>
+                                </div>
+                            ) : (
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium text-slate-800">{room.name}</span>
+                                    {isAdmin && (
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setEditingRoomId(room.id); setEditRoomName(room.name); }}
+                                                className="text-slate-400 hover:text-indigo-500 p-1"
+                                                title="Düzenle"
+                                            >
+                                                <Edit size={14} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteRoom(room.id); }}
+                                                className="text-slate-400 hover:text-red-500 p-1"
+                                                title="Sil"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                <Settings size={12} /> ID: {room.id.slice(-6)}
+                                ID: {room.id.slice(-4)}
                             </div>
                         </div>
                     ))}
@@ -205,32 +276,73 @@ export default function RoomRackManager() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {racks[activeRoomId]?.map(rack => (
-                                <div key={rack.id} className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between group">
-                                    <div>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-medium text-slate-800">{rack.name}</h4>
-                                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-medium">Raf</span>
-                                        </div>
-                                        <div className="text-xs text-slate-500 mt-2">
-                                            Kapasite: {rack.rows * rack.cols * rack.sides} Kafes <br />
-                                            <span className="opacity-75">({rack.sides === 2 ? 'Çift Yüzlü' : 'Tek Yüzlü'} - {rack.rows}x{rack.cols})</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <button className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
-                                            İncele <ChevronRight size={16} />
-                                        </button>
-                                        {isAdmin && (
-                                            <button
-                                                onClick={() => handleDeleteRack(rack.id, activeRoomId)}
-                                                className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                                                title="Rafı Sil"
-                                            >
-                                                <Trash2 size={16} />
+                                <div key={rack.id} className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between group relative overflow-hidden">
+                                    {editingRackId === rack.id ? (
+                                        <div className="flex flex-col gap-2 relative z-10 w-full bg-white">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <h4 className="text-sm font-medium text-slate-700">Rafı Düzenle</h4>
+                                                <button onClick={() => setEditingRackId(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={16} /></button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={editRackData.name}
+                                                onChange={e => setEditRackData({ ...editRackData, name: e.target.value })}
+                                                className="text-sm border-slate-300 rounded px-2 py-1.5 w-full outline-none focus:ring-1 focus:ring-indigo-500 mb-1"
+                                                placeholder="Raf Adı"
+                                                autoFocus
+                                            />
+                                            <div className="flex items-center gap-2 text-xs">
+                                                <div className="flex flex-col flex-1">
+                                                    <label className="text-slate-500 mb-0.5">Satır:</label>
+                                                    <input type="number" min="1" value={editRackData.rows} onChange={e => setEditRackData({ ...editRackData, rows: Number(e.target.value) })} className="w-full border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500" />
+                                                </div>
+                                                <div className="flex flex-col flex-1">
+                                                    <label className="text-slate-500 mb-0.5">Sütun:</label>
+                                                    <input type="number" min="1" value={editRackData.cols} onChange={e => setEditRackData({ ...editRackData, cols: Number(e.target.value) })} className="w-full border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500" />
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleUpdateRack(rack.id, activeRoomId)} className="bg-indigo-600 text-white rounded py-1.5 text-sm font-medium hover:bg-indigo-700 flex items-center justify-center gap-1 transition-colors mt-1">
+                                                <Check size={14} /> Kaydet
                                             </button>
-                                        )}
-                                    </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-medium text-slate-800">{rack.name}</h4>
+                                                    <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-medium">Raf</span>
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-2">
+                                                    Kapasite: {rack.rows * rack.cols} Kafes <br />
+                                                    <span className="opacity-75">({rack.rows}x{rack.cols})</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <button className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                                                    İncele <ChevronRight size={16} />
+                                                </button>
+                                                {isAdmin && (
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => { setEditingRackId(rack.id); setEditRackData({ name: rack.name, rows: rack.rows, cols: rack.cols }); }}
+                                                            className="text-slate-400 hover:text-indigo-500 p-1"
+                                                            title="Rafı Düzenle"
+                                                        >
+                                                            <Edit size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteRack(rack.id, activeRoomId)}
+                                                            className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                                            title="Rafı Sil"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ))}
                             {racks[activeRoomId]?.length === 0 && (
@@ -277,17 +389,6 @@ export default function RoomRackManager() {
                                         onChange={e => setNewRackCols(Number(e.target.value))}
                                         className="w-16 text-sm border-slate-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <label className="text-xs text-slate-500">Yön:</label>
-                                    <select
-                                        value={newRackSides}
-                                        onChange={e => setNewRackSides(Number(e.target.value))}
-                                        className="text-sm border-slate-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
-                                    >
-                                        <option value={1}>Tek Yüzlü</option>
-                                        <option value={2}>Çift Yüzlü (A-B)</option>
-                                    </select>
                                 </div>
                                 <button
                                     type="submit"

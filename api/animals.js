@@ -17,7 +17,8 @@ export default async function handler(req, res) {
                 const animals = await collection.find(query).sort({ dob: -1 }).toArray();
                 const formatted = animals.map(animal => ({
                     ...animal,
-                    id: animal._id.toString()
+                    id: animal._id.toString(),
+                    cageId: animal.cageId.toString()
                 }));
                 res.status(200).json(formatted);
             } catch (e) {
