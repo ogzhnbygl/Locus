@@ -2,6 +2,7 @@ import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Loader2 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
+import { BrowserRouter } from 'react-router-dom';
 
 function AppContent() {
     const { user, loading, loginRedirect } = useAuth();
@@ -26,14 +27,16 @@ function AppContent() {
         );
     }
 
-    // Application Router (Simple conditional rendering for MVP)
+    // Application Router
     return <Dashboard />;
 }
 
 export default function App() {
     return (
         <AuthProvider>
-            <AppContent />
+            <BrowserRouter>
+                <AppContent />
+            </BrowserRouter>
         </AuthProvider>
     );
 }

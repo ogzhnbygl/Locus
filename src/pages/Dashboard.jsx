@@ -1,18 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link, useLocation, Routes, Route } from 'react-router-dom';
 import { LogOut, MapPin, Layers, Grid as GridIcon } from 'lucide-react';
 import RoomRackManager from '../components/RoomRackManager';
 import Navigator from '../components/Navigator';
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
-    const [activeView, setActiveView] = useState('rooms');
-
-    const renderContent = () => {
-        if (activeView === 'rooms') return <RoomRackManager />;
-        if (activeView === 'navigator') return <Navigator />;
-        return null;
-    };
+    const location = useLocation();
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
@@ -32,24 +27,24 @@ export default function Dashboard() {
 
                     {/* Navigation */}
                     <nav className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-lg">
-                        <button
-                            onClick={() => setActiveView('rooms')}
-                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activeView === 'rooms'
+                        <Link
+                            to="/"
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${location.pathname === '/'
                                 ? 'bg-white text-indigo-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
                                 }`}
                         >
                             <Layers size={16} /> Odalar & Raflar
-                        </button>
-                        <button
-                            onClick={() => setActiveView('navigator')}
-                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activeView === 'navigator'
+                        </Link>
+                        <Link
+                            to="/navigator"
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${location.pathname === '/navigator'
                                 ? 'bg-white text-indigo-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
                                 }`}
                         >
                             <GridIcon size={16} /> Kafes Haritası
-                        </button>
+                        </Link>
                     </nav>
 
                     {/* User Profile & Actions */}
@@ -77,9 +72,10 @@ export default function Dashboard() {
 
             {/* Main Content Area */}
             <main className="flex-1 max-w-[1600px] mx-auto w-full p-6">
-
-
-                {renderContent()}
+                <Routes>
+                    <Route path="/" element={<RoomRackManager />} />
+                    <Route path="/navigator" element={<Navigator />} />
+                </Routes>
             </main>
         </div>
     );

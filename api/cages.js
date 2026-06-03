@@ -1,6 +1,22 @@
 import clientPromise from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
 import { verifyAuth } from '../lib/auth.js';
+import { z } from 'zod';
+
+const cagePostSchema = z.object({
+    rackId: z.string().refine(val => {
+        try {
+            return ObjectId.isValid(val);
+        } catch {
+            return false;
+        }
+    }, 'Geçersiz rackId formatı.'),
+    name: z.string().min(1, 'Kafes adı gereklidir.'),
+    barcode: z.string().optional().default(''),
+    status: z.string().optional().default('Active'),
+    row: z.coerce.number().int().positive('Satır koordinatı pozitif bir tam sayı olmalıdır.'),
+    column: z.coerce.number().int().positive('Sütun koordinatı pozitif bir tam sayı olmalıdır.')
+});
 
 export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
@@ -38,16 +54,40 @@ export default async function handler(req, res) {
 
         case 'POST':
             try {
-                const { rackId, name, barcode, status, row, column } = req.body;
-                if (!rackId || !name) return res.status(400).json({ error: 'rackId and name are required' });
+                const validation = cagePostSchema.safeParse(req.body);
+                if (!validation.success) {
+                    return res.status(400).json({ error: validation.error.errors[0].message });
+                }
+                const { rackId, name, barcode, status, row, column } = validation.data;
+
+                // 1. Check if rack exists and retrieve dimensions
+                const rack = await db.collection('racks').findOne({ _id: new ObjectId(rackId) });
+                if (!rack) {
+                    return res.status(404).json({ error: 'Belirtilen raf bulunamadı.' });
+                }
+
+                // 2. Coordinate boundaries check
+                if (row > rack.rows || column > rack.cols) {
+                    return res.status(400).json({
+                        error: `Koordinatlar raf sınırları dışındadır. Raf boyutları: ${rack.rows} satır x ${rack.cols} sütun.`
+                    });
+                }
+
+                // 3. Slot overlap check
+                const existingCage = await collection.findOne({ rackId, row, column });
+                if (existingCage) {
+                    return res.status(400).json({
+                        error: `Belirtilen konumda (${row}. satır, ${column}. sütun) zaten '${existingCage.name}' isimli bir kafes mevcut.`
+                    });
+                }
 
                 const newCage = {
                     rackId,
                     name,
-                    barcode: barcode || '',
-                    status: status || 'Active', // 'Active', 'Empty', 'Maintenance' etc.
-                    row: row ? parseInt(row, 10) : 1,
-                    column: column ? parseInt(column, 10) : 1,
+                    barcode,
+                    status,
+                    row,
+                    column,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
