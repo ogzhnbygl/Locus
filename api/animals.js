@@ -1,7 +1,17 @@
 import clientPromise from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
+import { verifyAuth } from '../lib/auth.js';
 
 export default async function handler(req, res) {
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    const user = await verifyAuth(req, 'locus');
+    if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const client = await clientPromise;
     const db = client.db('Locus_db');
     const collection = db.collection('animals');

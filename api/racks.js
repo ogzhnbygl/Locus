@@ -1,7 +1,17 @@
 import clientPromise from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
+import { verifyAuth } from '../lib/auth.js';
 
 export default async function handler(req, res) {
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    const user = await verifyAuth(req, 'locus');
+    if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const client = await clientPromise;
     const db = client.db('Locus_db');
     const collection = db.collection('racks');
@@ -78,9 +88,18 @@ export default async function handler(req, res) {
                 const { id } = req.query;
                 if (!id) return res.status(400).json({ error: 'ID is required' });
 
+                // Deep Cascading Deletes: Delete all animals inside cages in this rack first
+                const cages = await db.collection('cages').find({ rackId: id }).toArray();
+                const cageIds = cages.map(c => c._id.toString());
+
+                if (cageIds.length > 0) {
+                    await db.collection('animals').deleteMany({ cageId: { $in: cageIds } });
+                }
+
                 // Delete all cages in this rack
                 await db.collection('cages').deleteMany({ rackId: id });
 
+                // Delete the rack
                 await collection.deleteOne({ _id: new ObjectId(id) });
                 res.status(200).json({ success: true });
             } catch (e) {
