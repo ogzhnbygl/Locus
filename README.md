@@ -6,15 +6,17 @@ Bu sistem, fiziksel tesisin Odalar > Raflar > Kafesler > Hayvanlar hiyerarşisin
 
 ## 🚀 Özellikler
 
-- **Tesis Hiyerarşisi:**
+- **Vivaryum Hiyerarşisi:**
     - Odaların (Rooms) ve Rafların (Racks) idari yetkililer (Admin) tarafından tanımlanması.
     - Kafeslerin (Cages) ve içerisinde barınan Hayvanların (Animals) yetkili kullanıcılar (User) tarafından yönetimi.
-- **Detaylı Hayvan Kaydı:**
-    - Apex ekosisteminin diğer bir parçası olan **Dispo** modülü ile tamamen uyumlu veri şeması (Tür, Irk, Cinsiyet, Proje, Doğum Tarihi).
-    - İlerleyen dönemlerde Dispo ile kolay entegrasyon için standartlaştırılmış altyapı.
-- **Kapsamlı Rol ve Yetki Yönetimi:**
-    - Merkez (Apex) üzerinden `interapp_session` bazlı Single Sign-On (SSO) mimarisi.
-    - Sistem odalarına sadece idari yetki ile müdahale edilebilmesini sağlayan yapı.
+    - **Cascading Deletes (Kaskat Silme):** Bir oda veya raf silindiğinde, veritabanı bütünlüğünü korumak amacıyla o odaya/rafa bağlı tüm kafesler ve alt kayıtlar otomatik olarak temizlenir.
+- **Kafes Yerleşimi ve Çakışma Önleme (Faz 2):**
+    - Raf grid matrisi sınır kontrolleri: Kafeslerin tanımlanan raf boyutlarını (`rows` ve `cols` sınırlarını) aşması backend düzeyinde engellenir.
+    - **Çakışma Koruması (Overlap Prevention):** Aynı raf hücresine (satır/sütun koordinatına) birden fazla kafes eklenmesi Zod ve MongoDB sorgusuyla engellenmiştir.
+- **Güvenli Oturum ve Yönlendirme (Faz 1 & Faz 2):**
+    - Apex ekosistemi `interapp_session` JWT çerezi ile tek noktadan oturum kontrolü.
+    - `react-router-dom` ile URL tabanlı yönlendirme (`/rooms`, `/navigator`, `/navigator/:roomId/:rackId`).
+    - Backend API isteklerinin Zod şemaları ile doğrulanması.
 
 ## 🛠️ Teknolojiler
 

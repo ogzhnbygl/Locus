@@ -19,3 +19,28 @@ Amacı, fiziksel alanın soyutlanmış bir kopyasını yaratarak "Oda" seviyesin
 ## UX/UI Tasarım Hedefi:
 - **Derinlik ve Akıcılık:** Locus arayüzü sadece tablo veya formlardan ibaret olmamalıdır; odadan hayvana uzanan yapı, modern ve akıcı bileşenler, breadcrumb (bilgi kırıntıları) veya interaktif ağaç görünümleri ile sunulmalıdır.
 - **Açık, Ferah ve Endüstriyel Çizgiler:** Karmaşık veriyi yorucu olmadan, anlaşılır ikonografi (Lucide React) ile temsil etmelidir.
+
+---
+
+## 🗺️ Yol Haritası (Roadmap)
+
+### Faz 1: Temel Mimari ve Güvenlik (Tamamlandı ✅)
+- [x] Odalar ve Raflar için CRUD modülleri (Admin yetkili).
+- [x] Apex auth ve paylaşılan oturum entegrasyonu.
+- [x] **Kaskat Silme (Cascading Deletes):** Oda/Raf silindiğinde alt kafes ve hayvan verilerinin temizlenmesi.
+
+### Faz 2: Standardizasyon, Doğrulama ve Yönlendirme (Tamamlandı ✅)
+- [x] **Yönlendirme:** `react-router-dom` entegrasyonu ile URL tabanlı yönlendirme (`/rooms`, `/navigator`, `/navigator/:roomId/:rackId`).
+- [x] **Zod API Doğrulamaları:** POST ve DELETE gövdelerinin doğrulanması.
+- [x] **Grid Matrisi Kontrolü:** Kafeslerin rafın satır/sütun sınırlarını aşmasının sunucuda engellenmesi.
+- [x] **Çakışma Koruması:** Aynı koordinata mükerrer kafes yerleştirilmesinin engellenmesi.
+- [x] **Atıl Kod Temizliği:** `/api/lib/mongodb.js` ve boş model klasörlerinin silinmesi.
+
+> [!NOTE]
+> Faz 2 kapsamındaki Adım 5 geliştirmesi olan **Kafes Detay Drawer UI (Hayvan Yönetimi)** kullanıcı isteği doğrultusunda kapsam dışı tutulmuştur.
+
+### Faz 3: Gelişmiş Özellikler (Planlanıyor)
+- [ ] Kafes Detay Drawer UI (Kafes içi hayvanların CRUD yönetimi).
+- [ ] Rafların görsel 2D/3D sürükle-bırak (Drag-and-Drop) yerleşim editörü.
+- [ ] Dispo ve LabProject entegrasyonu ile hayvanların deney kotalarının kafes koordinatlarına göre otomatik raporlanması.
+
