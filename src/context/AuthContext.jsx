@@ -2,6 +2,21 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+export const isPreviewHost = () => {
+    if (typeof window === 'undefined') return false;
+    const h = window.location.hostname;
+    return h === 'test.wildtype.app' || h.startsWith('test-') || h.endsWith('.vercel.app');
+};
+
+export const getApexUrl = () => {
+    if (typeof window !== 'undefined') {
+        const h = window.location.hostname;
+        if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5173';
+        if (isPreviewHost()) return 'https://test.wildtype.app';
+    }
+    return 'https://wildtype.app';
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -47,19 +62,11 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const loginRedirect = () => {
-        // Redirect to the main Apex Hub for login
-        let baseUrl = window.location.origin;
-        if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
-            window.location.href = 'http://localhost:5173/login'; // Adjust port if Apex runs on different local port
-        } else {
-            window.location.href = 'https://wildtype.app/login';
-        }
+        window.location.href = `${getApexUrl()}/login`;
     };
 
     const logout = async () => {
-        // In Locus, logout just redirects to Apex logout or we would call an Apex API.
-        // simpler: clear cookie / redirect to apex login
-        loginRedirect();
+        window.location.href = getApexUrl();
     };
 
     return (

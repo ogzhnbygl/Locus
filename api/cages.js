@@ -1,4 +1,4 @@
-import clientPromise from '../lib/mongodb.js';
+import clientPromise, { getDbName } from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
 import { verifyAuth } from '../lib/auth.js';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     }
 
     const client = await clientPromise;
-    const db = client.db('Locus_db');
+    const db = client.db(getDbName('Locus_db'));
     const collection = db.collection('cages');
 
     switch (req.method) {

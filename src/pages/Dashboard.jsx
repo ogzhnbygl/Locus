@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, isPreviewHost } from '../context/AuthContext';
 import { Link, useLocation, Routes, Route } from 'react-router-dom';
 import { LogOut, MapPin, Layers, Grid as GridIcon } from 'lucide-react';
 import RoomRackManager from '../components/RoomRackManager';
@@ -20,7 +20,14 @@ export default function Dashboard() {
                             <MapPin size={22} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-slate-800 leading-none">Locus</h1>
+                            <h1 className="text-xl font-bold text-slate-800 leading-none flex items-center gap-2">
+                                Locus
+                                {isPreviewHost() && (
+                                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 rounded-full">
+                                        Test Ortamı
+                                    </span>
+                                )}
+                            </h1>
                             <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Dijital İkiz | Vivaryum</p>
                         </div>
                     </div>

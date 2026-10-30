@@ -1,4 +1,4 @@
-import clientPromise from '../lib/mongodb.js';
+import clientPromise, { getDbName } from '../lib/mongodb.js';
 import { verifyAuth } from '../lib/auth.js';
 
 export default async function handler(req, res) {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     try {
         const client = await clientPromise;
         // Connect specifically to LabProject_db
-        const db = client.db('LabProject_db');
+        const db = client.db(getDbName('LabProject_db'));
 
         const projects = await db.collection('projects')
             .find({
