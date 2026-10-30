@@ -1,15 +1,37 @@
 import clientPromise, { getDbName } from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
-import { verifyAuth } from '../lib/auth.js';
+import { verifyAuthWithStatus } from '../lib/auth.js';
+import { z } from 'zod';
+
+const rackPostSchema = z.object({
+    roomId: z.string().refine(val => ObjectId.isValid(val), 'Geçersiz oda ID formatı.'),
+    name: z.string().trim().min(1, 'Raf adı gereklidir.'),
+    description: z.string().optional().default(''),
+    rows: z.coerce.number().int().min(1, 'Satır sayısı en az 1 olmalıdır.').max(26, 'Satır sayısı en fazla 26 olabilir.').optional().default(1),
+    cols: z.coerce.number().int().min(1, 'Sütun sayısı en az 1 olmalıdır.').max(50, 'Sütun sayısı en fazla 50 olabilir.').optional().default(1)
+});
+
+const rackPutSchema = z.object({
+    id: z.string().refine(val => ObjectId.isValid(val), 'Geçersiz raf ID formatı.'),
+    name: z.string().trim().min(1, 'Raf adı gereklidir.'),
+    description: z.string().optional().default(''),
+    rows: z.coerce.number().int().min(1).max(26).optional(),
+    cols: z.coerce.number().int().min(1).max(50).optional()
+});
 
 export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    const user = await verifyAuth(req, 'locus');
+    const { user, status, error } = await verifyAuthWithStatus(req, 'locus');
     if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(status || 401).json({ error: error || 'Unauthorized' });
+    }
+
+    // Mutating operations on physical racks are restricted to administrators
+    if (req.method !== 'GET' && user.role !== 'admin') {
+        return res.status(403).json({ error: 'Raf ekleme, düzenleme ve silme işlemleri sadece yöneticiler (Admin) tarafından yapılabilir.' });
     }
 
     const client = await clientPromise;
@@ -20,8 +42,8 @@ export default async function handler(req, res) {
         case 'GET':
             try {
                 const { roomId } = req.query;
-                let query = {};
-                if (roomId) {
+                const query = {};
+                if (typeof roomId === 'string' && roomId) {
                     query.roomId = roomId;
                 }
                 const racks = await collection.find(query).sort({ createdAt: -1 }).toArray();
@@ -38,15 +60,20 @@ export default async function handler(req, res) {
 
         case 'POST':
             try {
-                const { roomId, name, description, rows, cols } = req.body;
-                if (!roomId || !name) return res.status(400).json({ error: 'roomId and name are required' });
+                const validation = rackPostSchema.safeParse(req.body);
+                if (!validation.success) {
+                    return res.status(400).json({
+                        error: validation.error.issues?.[0]?.message || 'Geçersiz raf verisi.'
+                    });
+                }
+                const { roomId, name, description, rows, cols } = validation.data;
 
                 const newRack = {
                     roomId,
                     name,
-                    description: description || '',
-                    rows: rows ? parseInt(rows, 10) : 1,
-                    cols: cols ? parseInt(cols, 10) : 1,
+                    description,
+                    rows,
+                    cols,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -60,23 +87,47 @@ export default async function handler(req, res) {
 
         case 'PUT':
             try {
-                const { id, name, description, rows, cols } = req.body;
-                if (!id || !name) return res.status(400).json({ error: 'ID and Name are required' });
+                const validation = rackPutSchema.safeParse(req.body);
+                if (!validation.success) {
+                    return res.status(400).json({
+                        error: validation.error.issues?.[0]?.message || 'Geçersiz raf verisi.'
+                    });
+                }
+                const { id, name, description, rows, cols } = validation.data;
+
+                const existingRack = await collection.findOne({ _id: new ObjectId(id) });
+                if (!existingRack) return res.status(404).json({ error: 'Raf bulunamadı.' });
+
+                const nextRows = rows ?? existingRack.rows;
+                const nextCols = cols ?? existingRack.cols;
+
+                // Prevent orphaning cages outside new grid boundaries when shrinking a rack
+                const outOfBoundsCage = await db.collection('cages').findOne({
+                    rackId: id,
+                    $or: [
+                        { row: { $gt: nextRows } },
+                        { column: { $gt: nextCols } }
+                    ]
+                });
+                if (outOfBoundsCage) {
+                    return res.status(400).json({
+                        error: `Raf boyutu küçültülemez: (${outOfBoundsCage.row}. satır, ${outOfBoundsCage.column}. sütun) konumunda '${outOfBoundsCage.name}' kafesi bulunuyor.`
+                    });
+                }
 
                 const updateData = {
                     name,
-                    description: description || '',
+                    description,
+                    rows: nextRows,
+                    cols: nextCols,
                     updatedAt: new Date().toISOString()
                 };
-                if (rows) updateData.rows = parseInt(rows, 10);
-                if (cols) updateData.cols = parseInt(cols, 10);
 
-                const result = await collection.updateOne(
+                await collection.updateOne(
                     { _id: new ObjectId(id) },
                     { $set: updateData }
                 );
 
-                if (result.matchedCount === 0) return res.status(404).json({ error: 'Rack not found' });
                 res.status(200).json({ success: true });
             } catch (e) {
                 res.status(500).json({ error: e.message });
@@ -86,7 +137,9 @@ export default async function handler(req, res) {
         case 'DELETE':
             try {
                 const { id } = req.query;
-                if (!id) return res.status(400).json({ error: 'ID is required' });
+                if (!id || typeof id !== 'string' || !ObjectId.isValid(id)) {
+                    return res.status(400).json({ error: 'Geçerli bir raf ID gereklidir.' });
+                }
 
                 // Deep Cascading Deletes: Delete all animals inside cages in this rack first
                 const cages = await db.collection('cages').find({ rackId: id }).toArray();

@@ -1,7 +1,7 @@
 import React from 'react';
-import { useAuth, isPreviewHost } from '../context/AuthContext';
+import { useAuth, getApexUrl, isPreviewHost } from '../context/AuthContext';
 import { Link, useLocation, Routes, Route } from 'react-router-dom';
-import { LogOut, MapPin, Layers, Grid as GridIcon } from 'lucide-react';
+import { LogOut, MapPin, Layers, Grid as GridIcon, LayoutGrid } from 'lucide-react';
 import RoomRackManager from '../components/RoomRackManager';
 import Navigator from '../components/Navigator';
 
@@ -65,7 +65,16 @@ export default function Dashboard() {
                             </span>
                         </div>
 
+                        <a
+                            href={getApexUrl()}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                            title="Apex Ana Ekrana Dön"
+                        >
+                            <LayoutGrid size={20} />
+                        </a>
+
                         <button
+                            type="button"
                             onClick={logout}
                             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors flex items-center gap-2"
                             title="Çıkış Yap"

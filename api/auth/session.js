@@ -1,14 +1,23 @@
-import { verifyAuth } from '../../lib/auth.js';
+import { verifyAuthWithStatus, clearSessionCookie } from '../../lib/auth.js';
 
 export default async function handler(req, res) {
+    if (req.method === 'DELETE' || req.method === 'POST') {
+        clearSessionCookie(req, res);
+        return res.status(200).json({ message: 'Logged out' });
+    }
+
     if (req.method !== 'GET') {
+        res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
     try {
-        const user = await verifyAuth(req, 'locus');
+        const { user, status, error } = await verifyAuthWithStatus(req, 'locus');
         if (!user) {
-            return res.status(401).json({ isAuthenticated: false, error: 'Authentication failed' });
+            return res.status(status || 401).json({
+                isAuthenticated: status === 403,
+                error: error || 'Authentication failed'
+            });
         }
 
         return res.status(200).json({

@@ -1,15 +1,32 @@
 import clientPromise, { getDbName } from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
-import { verifyAuth } from '../lib/auth.js';
+import { verifyAuthWithStatus } from '../lib/auth.js';
+import { z } from 'zod';
+
+const roomPostSchema = z.object({
+    name: z.string().trim().min(1, 'Oda adı gereklidir.'),
+    description: z.string().optional().default('')
+});
+
+const roomPutSchema = z.object({
+    id: z.string().refine(val => ObjectId.isValid(val), 'Geçersiz oda ID formatı.'),
+    name: z.string().trim().min(1, 'Oda adı gereklidir.'),
+    description: z.string().optional().default('')
+});
 
 export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    const user = await verifyAuth(req, 'locus');
+    const { user, status, error } = await verifyAuthWithStatus(req, 'locus');
     if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(status || 401).json({ error: error || 'Unauthorized' });
+    }
+
+    // Mutating operations on physical rooms are restricted to administrators
+    if (req.method !== 'GET' && user.role !== 'admin') {
+        return res.status(403).json({ error: 'Oda ekleme, düzenleme ve silme işlemleri sadece yöneticiler (Admin) tarafından yapılabilir.' });
     }
 
     const client = await clientPromise;
@@ -32,12 +49,17 @@ export default async function handler(req, res) {
 
         case 'POST':
             try {
-                const { name, description } = req.body;
-                if (!name) return res.status(400).json({ error: 'Name is required' });
+                const validation = roomPostSchema.safeParse(req.body);
+                if (!validation.success) {
+                    return res.status(400).json({
+                        error: validation.error.issues?.[0]?.message || 'Geçersiz oda verisi.'
+                    });
+                }
+                const { name, description } = validation.data;
 
                 const newRoom = {
                     name,
-                    description: description || '',
+                    description,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -51,12 +73,17 @@ export default async function handler(req, res) {
 
         case 'PUT':
             try {
-                const { id, name, description } = req.body;
-                if (!id || !name) return res.status(400).json({ error: 'ID and Name are required' });
+                const validation = roomPutSchema.safeParse(req.body);
+                if (!validation.success) {
+                    return res.status(400).json({
+                        error: validation.error.issues?.[0]?.message || 'Geçersiz oda verisi.'
+                    });
+                }
+                const { id, name, description } = validation.data;
 
                 const result = await collection.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: { name, description: description || '', updatedAt: new Date().toISOString() } }
+                    { $set: { name, description, updatedAt: new Date().toISOString() } }
                 );
 
                 if (result.matchedCount === 0) return res.status(404).json({ error: 'Room not found' });
@@ -69,7 +96,9 @@ export default async function handler(req, res) {
         case 'DELETE':
             try {
                 const { id } = req.query;
-                if (!id) return res.status(400).json({ error: 'ID is required' });
+                if (!id || typeof id !== 'string' || !ObjectId.isValid(id)) {
+                    return res.status(400).json({ error: 'Geçerli bir oda ID gereklidir.' });
+                }
 
                 // Deep Cascading Deletes: Delete all animals, cages, and racks associated with this room.
                 const racks = await db.collection('racks').find({ roomId: id }).toArray();

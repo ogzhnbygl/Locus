@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
             }
 
             try {
-                const response = await fetch('/api/auth/session');
+                const response = await fetch('/api/auth/session', { credentials: 'include' });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.isAuthenticated) {
@@ -47,13 +47,18 @@ export const AuthProvider = ({ children }) => {
                     } else {
                         setUser(null);
                     }
+                    setLoading(false);
+                } else if (response.status === 403) {
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(errorData.error || 'Bu uygulamaya erişim yetkiniz bulunmamaktadır.');
+                    window.location.href = getApexUrl();
                 } else {
                     setUser(null);
+                    setLoading(false);
                 }
             } catch (error) {
                 console.error('Auth error:', error);
                 setUser(null);
-            } finally {
                 setLoading(false);
             }
         };
@@ -66,7 +71,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        window.location.href = getApexUrl();
+        try {
+            await fetch('/api/auth/session', { method: 'DELETE', credentials: 'include' });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        window.location.href = `${getApexUrl()}/login`;
     };
 
     return (

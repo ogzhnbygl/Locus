@@ -1,6 +1,6 @@
 import clientPromise, { getDbName } from '../lib/mongodb.js';
 import { ObjectId } from 'mongodb';
-import { verifyAuth } from '../lib/auth.js';
+import { verifyAuthWithStatus } from '../lib/auth.js';
 import { z } from 'zod';
 
 const cagePostSchema = z.object({
@@ -23,9 +23,9 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const user = await verifyAuth(req, 'locus');
+    const { user, status, error } = await verifyAuthWithStatus(req, 'locus');
     if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(status || 401).json({ error: error || 'Unauthorized' });
     }
 
     const client = await clientPromise;
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
             try {
                 const validation = cagePostSchema.safeParse(req.body);
                 if (!validation.success) {
-                    return res.status(400).json({ error: validation.error.errors[0].message });
+                    return res.status(400).json({ error: validation.error.issues?.[0]?.message || 'Geçersiz kafes verisi.' });
                 }
                 const { rackId, name, barcode, status, row, column } = validation.data;
 
@@ -102,7 +102,9 @@ export default async function handler(req, res) {
         case 'DELETE':
             try {
                 const { id } = req.query;
-                if (!id) return res.status(400).json({ error: 'ID is required' });
+                if (!id || typeof id !== 'string' || !ObjectId.isValid(id)) {
+                    return res.status(400).json({ error: 'Geçerli bir kafes ID gereklidir.' });
+                }
 
                 // Ensure no animals are in the cage before deleting, or delete them
                 await db.collection('animals').deleteMany({ cageId: id });
